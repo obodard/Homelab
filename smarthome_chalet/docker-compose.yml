@@ -1,0 +1,35 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto
+    hostname: mosquitto
+    container_name: mosquitto
+    restart: unless-stopped
+    volumes:
+      - ./mosquitto:/etc/mosquitto
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    healthcheck:
+      test: mosquitto_sub -t '$$SYS/broker/uptime' -C 1 -i healthcheck -W 3
+      interval: 60s
+      timeout: 10s
+      retries: 10
+
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    image: koenkk/zigbee2mqtt
+    restart: unless-stopped
+    volumes:
+      - ./zigbee2mqtt/data:/app/data
+      - /run/udev:/run/udev:ro
+    ports:
+      # Frontend port
+      - 28080:8080
+    environment:
+      - TZ=America/New_York
+    devices:
+      # Make sure this matched your adapter location
+      - /dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_20231118181614-if00:/dev/ttyACM0
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+        restart: true
+    
