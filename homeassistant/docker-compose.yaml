@@ -1,0 +1,14 @@
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/armv7-homeassistant:latest
+    network_mode: host
+    privileged: true
+    environment:
+      - TZ=America/Montreal
+    volumes:
+      - ./config:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+
+
