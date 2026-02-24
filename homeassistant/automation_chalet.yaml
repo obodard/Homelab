@@ -1,0 +1,74 @@
+alias: Chauffage entree - based on Coup de pied cuisine
+description: ""
+triggers:
+  - entity_id: climate.coup_de_pied_cuisine
+    attribute: current_temperature
+    trigger: state
+  - entity_id: climate.coup_de_pied_cuisine
+    attribute: temperature
+    trigger: state
+actions:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {% set sp =
+              state_attr('climate.coup_de_pied_cuisine','temperature') %} {% set
+              rt =
+              state_attr('climate.coup_de_pied_cuisine','current_temperature')
+              %} {{ sp is not none and rt is not none and sp < 7 }}
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {% set rt =
+                      state_attr('climate.coup_de_pied_cuisine','current_temperature')
+                      %} {{ rt is not none and rt <= 4 }}
+                sequence:
+                  - target:
+                      entity_id: light.chauffage_entree
+                    action: light.turn_on
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {% set rt =
+                      state_attr('climate.coup_de_pied_cuisine','current_temperature')
+                      %} {{ rt is not none and rt > 6 }}
+                sequence:
+                  - target:
+                      entity_id: light.chauffage_entree
+                    action: light.turn_off
+      - conditions:
+          - condition: template
+            value_template: >
+              {% set sp =
+              state_attr('climate.coup_de_pied_cuisine','temperature') %} {% set
+              rt =
+              state_attr('climate.coup_de_pied_cuisine','current_temperature')
+              %} {{ sp is not none and rt is not none and sp >= 19 }}
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {% set rt =
+                      state_attr('climate.coup_de_pied_cuisine','current_temperature')
+                      %} {{ rt is not none and rt <= 22 }}
+                sequence:
+                  - target:
+                      entity_id: light.chauffage_entree
+                    action: light.turn_on
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {% set rt =
+                      state_attr('climate.coup_de_pied_cuisine','current_temperature')
+                      %} {{ rt is not none and rt > 25 }}
+                sequence:
+                  - target:
+                      entity_id: light.chauffage_entree
+                    action: light.turn_off
+    default: []
+mode: single
+
