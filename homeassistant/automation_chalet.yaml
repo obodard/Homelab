@@ -1,74 +1,62 @@
-alias: Chauffage entree - based on Coup de pied cuisine
-description: ""
+alias: Chauffage entrée — Coup de pied cuisine + Défi Hilo
+description: >
+  Controls light.chauffage_entree based on the kitchen thermostat.
+  Défi Hivernal rules take priority over normal temperature logic.
 triggers:
-  - entity_id: climate.coup_de_pied_cuisine
+  - trigger: state
+    entity_id: climate.coup_de_pied_cuisine
     attribute: current_temperature
-    trigger: state
-  - entity_id: climate.coup_de_pied_cuisine
+  - trigger: state
+    entity_id: climate.coup_de_pied_cuisine
     attribute: temperature
-    trigger: state
+  - trigger: state
+    entity_id: sensor.defi_hilo
+
 actions:
+  - variables:
+      defi: "{{ states('sensor.defi_hilo') }}"
+      set_temperature: "{{ state_attr('climate.coup_de_pied_cuisine', 'temperature') | float }}"
+      current_temperature: "{{ state_attr('climate.coup_de_pied_cuisine', 'current_temperature') | float }}"
+      valid: >-
+        {{ state_attr('climate.coup_de_pied_cuisine', 'temperature') is not none
+           and state_attr('climate.coup_de_pied_cuisine', 'current_temperature') is not none }}
+
   - choose:
       - conditions:
-          - condition: template
-            value_template: >
-              {% set sp =
-              state_attr('climate.coup_de_pied_cuisine','temperature') %} {% set
-              rt =
-              state_attr('climate.coup_de_pied_cuisine','current_temperature')
-              %} {{ sp is not none and rt is not none and sp < 7 }}
+          - "{{ defi == 'reduction' }}"
         sequence:
-          - choose:
-              - conditions:
-                  - condition: template
-                    value_template: >
-                      {% set rt =
-                      state_attr('climate.coup_de_pied_cuisine','current_temperature')
-                      %} {{ rt is not none and rt <= 4 }}
-                sequence:
-                  - target:
-                      entity_id: light.chauffage_entree
-                    action: light.turn_on
-              - conditions:
-                  - condition: template
-                    value_template: >
-                      {% set rt =
-                      state_attr('climate.coup_de_pied_cuisine','current_temperature')
-                      %} {{ rt is not none and rt > 6 }}
-                sequence:
-                  - target:
-                      entity_id: light.chauffage_entree
-                    action: light.turn_off
+          - action: light.turn_off
+            target: { entity_id: light.chauffage_entree }
+
       - conditions:
-          - condition: template
-            value_template: >
-              {% set sp =
-              state_attr('climate.coup_de_pied_cuisine','temperature') %} {% set
-              rt =
-              state_attr('climate.coup_de_pied_cuisine','current_temperature')
-              %} {{ sp is not none and rt is not none and sp >= 19 }}
+          - "{{ defi == 'pre_heat' and current_temperature < 8 }}"
         sequence:
-          - choose:
-              - conditions:
-                  - condition: template
-                    value_template: >
-                      {% set rt =
-                      state_attr('climate.coup_de_pied_cuisine','current_temperature')
-                      %} {{ rt is not none and rt <= 22 }}
-                sequence:
-                  - target:
-                      entity_id: light.chauffage_entree
-                    action: light.turn_on
-              - conditions:
-                  - condition: template
-                    value_template: >
-                      {% set rt =
-                      state_attr('climate.coup_de_pied_cuisine','current_temperature')
-                      %} {{ rt is not none and rt > 25 }}
-                sequence:
-                  - target:
-                      entity_id: light.chauffage_entree
-                    action: light.turn_off
-    default: []
+          - action: light.turn_on
+            target: { entity_id: light.chauffage_entree }
+
+      - conditions:
+          - "{{ valid and current_temperature <= 4 }}"
+        sequence:
+          - action: light.turn_on
+            target: { entity_id: light.chauffage_entree }
+
+      - conditions:
+          - "{{ valid and set_temperature < 15 and current_temperature > 6 }}"
+        sequence:
+          - action: light.turn_off
+            target: { entity_id: light.chauffage_entree }
+
+      - conditions:
+          - "{{ valid and set_temperature >= 15 and current_temperature <= 22 }}"
+        sequence:
+          - action: light.turn_on
+            target: { entity_id: light.chauffage_entree }
+
+      - conditions:
+          - "{{ valid and set_temperature >= 15 and current_temperature >= 23 }}"
+        sequence:
+          - action: light.turn_off
+            target: { entity_id: light.chauffage_entree }
+
 mode: single
 
